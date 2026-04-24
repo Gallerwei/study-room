@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自习室</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="room-body">
+    <div class="room-container">
+        <!-- 顶部栏 -->
+        <header class="room-header">
+            <div class="room-info">
+                <h1 id="roomName">自习室</h1>
+                <span class="room-meta">
+                    房间号: <strong id="roomIdDisplay">---</strong> |
+                    在线: <strong id="onlineCount">1</strong>人
+                </span>
+            </div>
+            <div class="room-actions">
+                <button class="btn btn-timer" onclick="toggleTimer()">⏱ 番茄钟</button>
+                <button class="btn btn-chat" onclick="toggleChat()">💬 聊天</button>
+                <button class="btn btn-danger" onclick="leaveCurrentRoom()">🚪 离开</button>
+            </div>
+        </header>
+
+        <!-- 主体 -->
+        <div class="room-main">
+            <!-- 视频区域 -->
+            <div class="video-section">
+                <div id="videoGrid" class="video-grid"></div>
+            </div>
+
+            <!-- 侧边栏 -->
+            <div id="sidebar" class="sidebar" style="display:none;">
+                <!-- 聊天 -->
+                <div id="chatPanel" class="panel" style="display:none;">
+                    <div class="panel-header">
+                        <h3>💬 聊天室</h3>
+                        <button class="close-btn" onclick="toggleChat()">&times;</button>
+                    </div>
+                    <div id="messagesContainer" class="messages-container"></div>
+                    <div class="message-input-area">
+                        <input type="text" id="messageInput" placeholder="输入消息..."
+                               onkeypress="if(event.key==='Enter')sendChatMessage()">
+                        <button class="btn-send" onclick="sendChatMessage()">发送</button>
+                    </div>
+                </div>
+
+                <!-- 番茄钟 -->
+                <div id="timerPanel" class="panel" style="display:none;">
+                    <div class="panel-header">
+                        <h3>🍅 番茄钟</h3>
+                        <button class="close-btn" onclick="toggleTimer()">&times;</button>
+                    </div>
+                    <div class="timer-display">
+                        <div id="timerDisplay" class="timer-time">25:00</div>
+                        <div id="timerStatus">准备开始</div>
+                    </div>
+                    <div class="timer-settings">
+                        <div class="form-group">
+                            <label>工作(分钟)</label>
+                            <input type="number" id="workTime" value="25" min="1" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label>休息(分钟)</label>
+                            <input type="number" id="breakTime" value="5" min="1" max="30">
+                        </div>
+                    </div>
+                    <div class="timer-controls">
+                        <button onclick="startTimer()" class="btn btn-success" id="timerStartBtn">开始</button>
+                        <button onclick="pauseTimer()" class="btn btn-warning" id="timerPauseBtn" style="display:none;">暂停</button>
+                        <button onclick="resetTimer()" class="btn btn-secondary">重置</button>
+                    </div>
+                    <div class="timer-stats">
+                        已完成: <span id="sessionCount">0</span> 个番茄钟
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <footer class="controls-bar">
+            <button id="muteBtn" class="control-btn" onclick="toggleMute()" title="静音">
+                <span id="muteIcon">🎤</span>
+            </button>
+            <button id="videoBtn" class="control-btn" onclick="toggleVideo()" title="关闭视频">
+                <span id="videoIcon">📹</span>
+            </button>
+            <button id="screenBtn" class="control-btn" onclick="shareScreen()" title="共享屏幕">
+                <span>🖥</span>
+            </button>
+            <button class="control-btn control-danger" onclick="leaveCurrentRoom()" title="离开">
+                <span>📞</span>
+            </button>
+        </footer>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>

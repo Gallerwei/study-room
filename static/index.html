@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>线上自习室</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">📚</span>
+                <h1>线上自习室</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showCreateModal()">✨ 创建自习室</button>
+                <button class="btn btn-secondary" onclick="refreshRooms()">🔄 刷新</button>
+            </div>
+        </header>
+
+        <!-- 主要内容 -->
+        <main>
+            <!-- 快速加入 -->
+            <div class="quick-join">
+                <h2>🔗 快速加入</h2>
+                <div class="join-form">
+                    <input type="text" id="roomIdInput" placeholder="输入房间号" maxlength="8">
+                    <input type="text" id="userNameInput" placeholder="你的名字（可选）">
+                    <button class="btn btn-success" onclick="quickJoin()">加入房间</button>
+                </div>
+            </div>
+
+            <!-- 房间列表 -->
+            <div class="rooms-section">
+                <h2>📋 可用自习室</h2>
+                <div id="roomsList" class="rooms-grid">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 创建房间弹窗 -->
+        <div id="createModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>创建自习室</h2>
+                    <span class="close" onclick="hideCreateModal()">&times;</span>
+                </div>
+                <form id="createForm" onsubmit="createRoom(event)">
+                    <div class="form-group">
+                        <label>房间名称</label>
+                        <input type="text" id="roomName" placeholder="给自习室起个名字" required>
+                    </div>
+                    <div class="form-group">
+                        <label>最大人数</label>
+                        <select id="maxUsers">
+                            <option value="4">4人</option>
+                            <option value="6">6人</option>
+                            <option value="10" selected>10人</option>
+                            <option value="16">16人</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>密码（可选）</label>
+                        <input type="password" id="roomPassword" placeholder="留空则无密码">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">创建房间</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
