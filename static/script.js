@@ -155,28 +155,40 @@ async function initRoom() {
         var pc = peerConnections[data.from_sid];
         if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
     });
-    socket.on('new_message', function(msg) { addMessage(msg); });
+        socket.on('chat_new', function(msg) { addMessage(msg); });
     socket.on('error', function(data) { alert(data.message); });
 }
 
 function createPeerConnection(userId, isInitiator) {
     var pc = new RTCPeerConnection({
-    iceServers: [
-        {urls: 'stun:stun.l.google.com:19302'},
-        {urls: 'stun:stun1.l.google.com:19302'},
-        {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        }
-    ]
-});
+        iceServers: [
+            {
+                urls: "stun:stun.relay.metered.ca:80",
+            },
+            {
+                urls: "turn:global.relay.metered.ca:80",
+                username: "48853592acf173d74386fdae",
+                credential: "UdR73vX2+MhguUZx7",
+            },
+            {
+                urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                username: "48853592acf173d74386fdae",
+                credential: "UdR73vX2+MhguUZx7",
+            },
+            {
+                urls: "turn:global.relay.metered.ca:443",
+                username: "48853592acf173d74386fdae",
+                credential: "UdR73vX2+MhguUZx7",
+            },
+            {
+                urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                username: "48853592acf173d74386fdae",
+                credential: "UdR73vX2+MhguUZx7",
+            },
+        ]
+    });
     peerConnections[userId] = pc;
+    // ... 后面的不变
     if (localStream) {
         localStream.getTracks().forEach(function(track) { pc.addTrack(track, localStream); });
     }
@@ -281,7 +293,6 @@ async function shareScreen() {
         };
     } catch (err) {}
 }
-
 // ============ 聊天 ============
 
 function toggleChat() {
@@ -292,6 +303,7 @@ function toggleChat() {
         sidebar.style.display = 'block';
         chat.style.display = 'flex';
         timer.style.display = 'none';
+        scrollChatToBottom();
     } else {
         sidebar.style.display = 'none';
         chat.style.display = 'none';
@@ -301,17 +313,46 @@ function toggleChat() {
 function sendChatMessage() {
     var input = document.getElementById('messageInput');
     var text = input.value.trim();
-    if (text && socket) { socket.emit('send_message', {text: text}); input.value = ''; }
+    if (text && socket) {
+        socket.emit('room_msg', {text: text});
+        input.value = '';
+    }
 }
 
 function addMessage(msg) {
     var container = document.getElementById('messagesContainer');
     if (!container) return;
+
+    var isMine = (currentUser && msg.user_id === currentUser.id);
+
     var div = document.createElement('div');
-    div.className = 'message';
-    div.innerHTML = '<div class="msg-header"><strong>' + msg.user_name + '</strong><span>' + new Date(msg.timestamp).toLocaleTimeString() + '</span></div><div>' + msg.text + '</div>';
+    div.style.cssText = 'display:flex;flex-direction:column;margin-bottom:12px;' +
+        (isMine ? 'align-items:flex-end;' : 'align-items:flex-start;');
+
+    var info = document.createElement('div');
+    info.style.cssText = 'font-size:11px;color:#999;margin-bottom:2px;';
+    info.textContent = msg.user_name + ' · ' + new Date(msg.timestamp).toLocaleTimeString();
+
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'max-width:80%;padding:8px 14px;border-radius:16px;font-size:14px;word-break:break-all;' +
+        (isMine
+            ? 'background:#667eea;color:white;border-bottom-right-radius:4px;'
+            : 'background:#e2e8f0;color:#333;border-bottom-left-radius:4px;');
+    bubble.textContent = msg.text;
+
+    div.appendChild(info);
+    div.appendChild(bubble);
     container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
+    scrollChatToBottom();
+}
+
+function scrollChatToBottom() {
+    var container = document.getElementById('messagesContainer');
+    if (container) {
+        setTimeout(function() {
+            container.scrollTop = container.scrollHeight;
+        }, 100);
+    }
 }
 
 // ============ 番茄钟 ============

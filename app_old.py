@@ -77,7 +77,7 @@ async def api_create_room(request):
         'created_at': datetime.now().isoformat(), 'status': 'active'
     }
     room_users[room_id] = set()
-    chat_messages[room_id] = []
+    chat_messages[str(room_id)] = []
 
     return web.json_response({'success': True, 'room_id': room_id, 'room_name': room_name})
 
@@ -167,7 +167,7 @@ async def join_room(sid, data):
     await sio.emit('room_joined', {
         'success': True, 'room_id': room_id, 'room_name': room['name'],
         'current_user': users[sid], 'existing_users': existing_users,
-        'messages': chat_messages.get(room_id, [])[-50:]
+        'messages': chat_messages.get(str(room_id), [])[-50:]
     }, to=sid)
 
     online = [users[u] for u in room_users[room_id]]
