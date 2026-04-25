@@ -12,7 +12,6 @@ let sessionCount = 0;
 let isTimerRunning = false;
 
 // ============ 首页功能 ============
-
 async function refreshRooms() {
     const container = document.getElementById('roomsList');
     if (!container) return;
@@ -27,25 +26,16 @@ async function refreshRooms() {
         container.innerHTML = rooms.map(room => `
             <div class="room-card" onclick="joinRoom('${room.id}')">
                 <h3>📚 ${room.name}</h3>
-                <div class="meta">
-                    <span>🆔 ${room.id}</span>
-                    <span>👥 ${room.online}/${room.max_users}</span>
-                </div>
+                <div class="meta"><span>🆔 ${room.id}</span><span>👥 ${room.online}/${room.max_users}</span></div>
                 <div style="margin-top:8px;color:#718096;">${room.has_password ? '🔒 有密码' : '🔓 公开'}</div>
-            </div>
-        `).join('');
+            </div>`).join('');
     } catch (err) {
         container.innerHTML = '<p style="color:red;">加载失败</p>';
     }
 }
 
-function showCreateModal() {
-    document.getElementById('createModal').style.display = 'flex';
-}
-
-function hideCreateModal() {
-    document.getElementById('createModal').style.display = 'none';
-}
+function showCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+function hideCreateModal() { document.getElementById('createModal').style.display = 'none'; }
 
 async function createRoom(event) {
     event.preventDefault();
@@ -54,19 +44,12 @@ async function createRoom(event) {
     const pwd = document.getElementById('roomPassword').value;
     try {
         const res = await fetch('/api/rooms', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({room_name: name, max_users: parseInt(max), password: pwd})
         });
         const data = await res.json();
-        if (data.success) {
-            alert('房间创建成功！房间号: ' + data.room_id);
-            hideCreateModal();
-            joinRoom(data.room_id);
-        }
-    } catch (err) {
-        alert('创建失败');
-    }
+        if (data.success) { alert('房间创建成功！房间号: ' + data.room_id); hideCreateModal(); joinRoom(data.room_id); }
+    } catch (err) { alert('创建失败'); }
 }
 
 function quickJoin() {
@@ -81,7 +64,6 @@ function joinRoom(roomId) {
 }
 
 // ============ 关于弹窗 ============
-
 function showAbout() {
     if (document.getElementById('aboutOverlay')) return;
     var overlay = document.createElement('div');
@@ -93,7 +75,7 @@ function showAbout() {
     box.innerHTML = '<div style="font-size:48px;">📚</div>' +
         '<h2 style="color:#333;margin:10px 0;">线上自习室 v1.0</h2>' +
         '<hr style="width:50px;border:1px solid #667eea;margin:10px auto;">' +
-        '<p style="color:#555;line-height:2.2;font-size:15px;">👨‍💻 开发者：<b>郑智鹏</b><br>📧 15702419317@163.com<br>💬 QQ：Galler wei<br>𝕏    Twitter：Galler唯</p>' +
+        '<p style="color:#555;line-height:2.2;font-size:15px;">👨‍💻 开发者：<b>郑智鹏</b><br>📧 15702419317@163.com<br>💬 QQ：Galler wei<br>𝕏 Twitter：Galler唯</p>' +
         '<p style="color:#aaa;font-size:12px;">© 2025 郑智鹏 版权所有</p>' +
         '<button id="aboutCloseBtn" style="margin-top:12px;padding:8px 30px;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">关闭</button>';
     overlay.appendChild(box);
@@ -103,7 +85,6 @@ function showAbout() {
 }
 
 // ============ 自习室页面 ============
-
 async function initRoom() {
     const params = new URLSearchParams(window.location.search);
     const roomId = params.get('room');
@@ -111,16 +92,16 @@ async function initRoom() {
     if (!roomId) { window.location.href = '/'; return; }
     document.getElementById('roomIdDisplay').textContent = roomId;
     currentRoomId = roomId;
-    socket = io(window.location.origin);
+    socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
     try {
         localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         addLocalVideo();
-    } catch (err) {
-        console.error('摄像头错误:', err);
-    }
+    } catch (err) { console.error('摄像头错误:', err); }
+
     socket.on('connect', function() {
         socket.emit('join_room', {room_id: roomId, user_name: userName});
     });
+
     socket.on('room_joined', function(data) {
         currentUser = data.current_user;
         document.getElementById('roomName').textContent = data.room_name;
@@ -128,17 +109,21 @@ async function initRoom() {
         if (data.messages) data.messages.forEach(function(msg) { addMessage(msg); });
         data.existing_users.forEach(function(user) { createPeerConnection(user.id, true); });
     });
+
     socket.on('user_joined', function(data) {
-    console.log('user_joined 收到:', data);
-    createPeerConnection(data.user.id, false);
-});
+        console.log('user_joined 收到:', data);
+        createPeerConnection(data.user.id, false);
+    });
+
     socket.on('user_left', function(data) {
         closePeerConnection(data.user_id);
         removeVideoCard(data.user_id);
     });
+
     socket.on('online_update', function(data) {
         document.getElementById('onlineCount').textContent = data.count;
     });
+
     socket.on('webrtc_offer', async function(data) {
         var pc = peerConnections[data.from_sid];
         if (pc) {
@@ -148,48 +133,32 @@ async function initRoom() {
             socket.emit('webrtc_answer', {target_sid: data.from_sid, sdp: answer});
         }
     });
+
     socket.on('webrtc_answer', async function(data) {
         var pc = peerConnections[data.from_sid];
         if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
     });
+
     socket.on('webrtc_ice_candidate', async function(data) {
         var pc = peerConnections[data.from_sid];
         if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
     });
-        socket.on('chat_new', function(msg) { addMessage(msg); });
+
+    socket.on('chat_new', function(msg) { addMessage(msg); });
     socket.on('error', function(data) { alert(data.message); });
 }
 
 function createPeerConnection(userId, isInitiator) {
     var pc = new RTCPeerConnection({
         iceServers: [
-            {
-                urls: "stun:stun.relay.metered.ca:80",
-            },
-            {
-                urls: "turn:global.relay.metered.ca:80",
-                username: "48853592acf173d74386fdae",
-                credential: "UdR73vX2+MhguUZx7",
-            },
-            {
-                urls: "turn:global.relay.metered.ca:80?transport=tcp",
-                username: "48853592acf173d74386fdae",
-                credential: "UdR73vX2+MhguUZx7",
-            },
-            {
-                urls: "turn:global.relay.metered.ca:443",
-                username: "48853592acf173d74386fdae",
-                credential: "UdR73vX2+MhguUZx7",
-            },
-            {
-                urls: "turns:global.relay.metered.ca:443?transport=tcp",
-                username: "48853592acf173d74386fdae",
-                credential: "UdR73vX2+MhguUZx7",
-            },
+            { urls: "stun:stun.relay.metered.ca:80" },
+            { urls: "turn:global.relay.metered.ca:80", username: "48853592acf173d74386fdae", credential: "UdR73vX2+MhguUZx7" },
+            { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "48853592acf173d74386fdae", credential: "UdR73vX2+MhguUZx7" },
+            { urls: "turn:global.relay.metered.ca:443", username: "48853592acf173d74386fdae", credential: "UdR73vX2+MhguUZx7" },
+            { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: "48853592acf173d74386fdae", credential: "UdR73vX2+MhguUZx7" }
         ]
     });
     peerConnections[userId] = pc;
-    // ... 后面的不变
     if (localStream) {
         localStream.getTracks().forEach(function(track) { pc.addTrack(track, localStream); });
     }
@@ -212,19 +181,11 @@ function addLocalVideo() {
     var grid = document.getElementById('videoGrid');
     if (!grid) return;
     var card = document.createElement('div');
-    card.className = 'video-card';
-    card.id = 'video-local';
+    card.className = 'video-card'; card.id = 'video-local';
     var video = document.createElement('video');
-    video.autoplay = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.srcObject = localStream;
-    var label = document.createElement('div');
-    label.className = 'user-label';
-    label.textContent = '我';
-    card.appendChild(video);
-    card.appendChild(label);
-    grid.appendChild(card);
+    video.autoplay = true; video.muted = true; video.playsInline = true; video.srcObject = localStream;
+    var label = document.createElement('div'); label.className = 'user-label'; label.textContent = '我';
+    card.appendChild(video); card.appendChild(label); grid.appendChild(card);
 }
 
 function addRemoteVideo(userId, stream) {
@@ -232,18 +193,11 @@ function addRemoteVideo(userId, stream) {
     var grid = document.getElementById('videoGrid');
     if (!grid) return;
     var card = document.createElement('div');
-    card.className = 'video-card';
-    card.id = 'video-' + userId;
+    card.className = 'video-card'; card.id = 'video-' + userId;
     var video = document.createElement('video');
-    video.autoplay = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    var label = document.createElement('div');
-    label.className = 'user-label';
-    label.textContent = '用户';
-    card.appendChild(video);
-    card.appendChild(label);
-    grid.appendChild(card);
+    video.autoplay = true; video.playsInline = true; video.srcObject = stream;
+    var label = document.createElement('div'); label.className = 'user-label'; label.textContent = '用户';
+    card.appendChild(video); card.appendChild(label); grid.appendChild(card);
 }
 
 function removeVideoCard(userId) {
@@ -252,7 +206,6 @@ function removeVideoCard(userId) {
 }
 
 // ============ 控制按钮 ============
-
 function toggleMute() {
     if (localStream) {
         var at = localStream.getAudioTracks()[0];
@@ -294,101 +247,71 @@ async function shareScreen() {
         };
     } catch (err) {}
 }
-// ============ 聊天 ============
 
+// ============ 聊天 ============
 function toggleChat() {
     var sidebar = document.getElementById('sidebar');
     var chat = document.getElementById('chatPanel');
     var timer = document.getElementById('timerPanel');
     if (chat.style.display === 'none' || chat.style.display === '') {
-        sidebar.style.display = 'block';
-        chat.style.display = 'flex';
-        timer.style.display = 'none';
-        scrollChatToBottom();
+        sidebar.style.display = 'block'; chat.style.display = 'flex'; timer.style.display = 'none'; scrollChatToBottom();
     } else {
-        sidebar.style.display = 'none';
-        chat.style.display = 'none';
+        sidebar.style.display = 'none'; chat.style.display = 'none';
     }
 }
 
 function sendChatMessage() {
     var input = document.getElementById('messageInput');
     var text = input.value.trim();
-    if (text && socket) {
-        socket.emit('room_msg', {text: text});
-        input.value = '';
-    }
+    if (text && socket) { socket.emit('room_msg', {text: text}); input.value = ''; }
 }
 
 function addMessage(msg) {
     var container = document.getElementById('messagesContainer');
     if (!container) return;
-
     var isMine = (currentUser && msg.user_id === currentUser.id);
-
     var div = document.createElement('div');
-    div.style.cssText = 'display:flex;flex-direction:column;margin-bottom:12px;' +
-        (isMine ? 'align-items:flex-end;' : 'align-items:flex-start;');
-
+    div.style.cssText = 'display:flex;flex-direction:column;margin-bottom:12px;' + (isMine ? 'align-items:flex-end;' : 'align-items:flex-start;');
     var info = document.createElement('div');
     info.style.cssText = 'font-size:11px;color:#999;margin-bottom:2px;';
     info.textContent = msg.user_name + ' · ' + new Date(msg.timestamp).toLocaleTimeString();
-
     var bubble = document.createElement('div');
     bubble.style.cssText = 'max-width:80%;padding:8px 14px;border-radius:16px;font-size:14px;word-break:break-all;' +
-        (isMine
-            ? 'background:#667eea;color:white;border-bottom-right-radius:4px;'
-            : 'background:#e2e8f0;color:#333;border-bottom-left-radius:4px;');
+        (isMine ? 'background:#667eea;color:white;border-bottom-right-radius:4px;' : 'background:#e2e8f0;color:#333;border-bottom-left-radius:4px;');
     bubble.textContent = msg.text;
-
-    div.appendChild(info);
-    div.appendChild(bubble);
-    container.appendChild(div);
-    scrollChatToBottom();
+    div.appendChild(info); div.appendChild(bubble); container.appendChild(div); scrollChatToBottom();
 }
 
 function scrollChatToBottom() {
     var container = document.getElementById('messagesContainer');
-    if (container) {
-        setTimeout(function() {
-            container.scrollTop = container.scrollHeight;
-        }, 100);
-    }
+    if (container) setTimeout(function() { container.scrollTop = container.scrollHeight; }, 100);
 }
 
 // ============ 番茄钟 ============
-
 function toggleTimer() {
     var sidebar = document.getElementById('sidebar');
     var chat = document.getElementById('chatPanel');
     var timer = document.getElementById('timerPanel');
     if (timer.style.display === 'none' || timer.style.display === '') {
-        sidebar.style.display = 'block';
-        timer.style.display = 'flex';
-        chat.style.display = 'none';
-        resetTimerDisplay();
+        sidebar.style.display = 'block'; timer.style.display = 'flex'; chat.style.display = 'none'; resetTimerDisplay();
     } else {
-        sidebar.style.display = 'none';
-        timer.style.display = 'none';
+        sidebar.style.display = 'none'; timer.style.display = 'none';
     }
 }
 
 function startTimer() {
     if (!isTimerRunning) {
         var workTime = parseInt(document.getElementById('workTime').value);
-        timerSeconds = workTime * 60;
-        isTimerRunning = true;
+        timerSeconds = workTime * 60; isTimerRunning = true;
         document.getElementById('timerStartBtn').style.display = 'none';
         document.getElementById('timerPauseBtn').style.display = 'block';
         document.getElementById('timerStatus').textContent = '工作中...';
-        if (socket) socket.emit('timer_start', {work_time: workTime, break_time: parseInt(document.getElementById('breakTime').value)});
+        if (socket) socket.emit('timer_start', {work_time: workTime});
         timerInterval = setInterval(function() {
             timerSeconds--;
             updateTimerDisplay();
             if (timerSeconds <= 0) {
-                clearInterval(timerInterval);
-                isTimerRunning = false;
-                sessionCount++;
+                clearInterval(timerInterval); isTimerRunning = false; sessionCount++;
                 document.getElementById('sessionCount').textContent = sessionCount;
                 document.getElementById('timerStatus').textContent = '完成！';
                 if (socket) socket.emit('timer_complete', {});
@@ -408,24 +331,18 @@ function startTimer() {
 
 function pauseTimer() {
     if (isTimerRunning) {
-        clearInterval(timerInterval);
-        isTimerRunning = false;
+        clearInterval(timerInterval); isTimerRunning = false;
         document.getElementById('timerStartBtn').style.display = 'block';
         document.getElementById('timerPauseBtn').style.display = 'none';
         document.getElementById('timerStatus').textContent = '已暂停';
     }
 }
 
-function resetTimer() {
-    clearInterval(timerInterval);
-    isTimerRunning = false;
-    resetTimerDisplay();
-}
+function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; resetTimerDisplay(); }
 
 function resetTimerDisplay() {
     var workTime = parseInt(document.getElementById('workTime').value);
-    timerSeconds = workTime * 60;
-    updateTimerDisplay();
+    timerSeconds = workTime * 60; updateTimerDisplay();
     document.getElementById('timerStartBtn').style.display = 'block';
     document.getElementById('timerPauseBtn').style.display = 'none';
     document.getElementById('timerStatus').textContent = '准备开始';
