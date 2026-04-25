@@ -129,8 +129,9 @@ async function initRoom() {
         data.existing_users.forEach(function(user) { createPeerConnection(user.id, true); });
     });
     socket.on('user_joined', function(data) {
-        createPeerConnection(data.user.id, false);
-    });
+    console.log('user_joined 收到:', data);
+    createPeerConnection(data.user.id, false);
+});
     socket.on('user_left', function(data) {
         closePeerConnection(data.user_id);
         removeVideoCard(data.user_id);
