@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['app.py'],
+    ['launcher.py'],
     pathex=[],
     binaries=[],
     datas=[],
