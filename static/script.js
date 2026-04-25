@@ -160,7 +160,22 @@ async function initRoom() {
 }
 
 function createPeerConnection(userId, isInitiator) {
-    var pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+    var pc = new RTCPeerConnection({
+    iceServers: [
+        {urls: 'stun:stun.l.google.com:19302'},
+        {urls: 'stun:stun1.l.google.com:19302'},
+        {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        }
+    ]
+});
     peerConnections[userId] = pc;
     if (localStream) {
         localStream.getTracks().forEach(function(track) { pc.addTrack(track, localStream); });
