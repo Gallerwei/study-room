@@ -163,7 +163,10 @@ async def join_room(sid, data):
 
     existing_users = [users[u] for u in room_users[room_id] if u != sid]
 
-    await sio.emit('user_joined', {'user': users[sid]}, room=room_id, skip_sid=sid)
+    # 逐个发给已在房间的人
+    for user_sid in room_users[room_id]:
+        if user_sid != sid:
+            await sio.emit('user_joined', {'user': users[sid]}, to=user_sid)
     await sio.emit('room_joined', {
         'success': True, 'room_id': room_id, 'room_name': room['name'],
         'current_user': users[sid], 'existing_users': existing_users,
